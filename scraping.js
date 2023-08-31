@@ -1,0 +1,51 @@
+import puppeteer from 'puppeteer';
+
+async function scrapePages() {
+    try {
+    const baseUrl = 'https://www.disway.com/ordinateur/pc-portable/?view-mode=grid&page=';
+    const totalPages = 14; // Specify the total number of pages to scrape
+
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    let results = []; // Array to store the scraped data
+
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+    const url = baseUrl + pageNum;
+    await page.goto(url);
+
+    const data = await page.evaluate(() => {
+        let items = document.querySelectorAll('.PLP_item');
+        let pageResults = [];
+
+        items.forEach((item) => {
+            let image = item.querySelector('#plp_ngbcjf8vp > div.PLP_grid-mode > div:nth-child(1) > div > div.PLP_thumbnail > a > span img');
+            let imageUrl = image ? image.getAttribute('src') : '';
+
+            // Check if the image URL is empty and handle it
+            if (imageUrl.trim() === '') {
+            imageUrl = 'No image available';
+            }
+            pageResults.push({
+            title: item.querySelector('.PLP_product-title').innerText,
+            Description: item.querySelector('.PLP_product-attributes').innerText,
+            Reference: item.querySelector('.PLP_product-id-stock').innerText,
+            image: imageUrl,
+
+        });
+        });
+
+        return pageResults;
+    });
+
+      results = results.concat(data); // Append the data from the current page to the results array
+    }
+
+    console.log(results);
+    await browser.close();
+    } catch (error) {
+    console.error(error);
+    }
+}
+
+scrapePages();
